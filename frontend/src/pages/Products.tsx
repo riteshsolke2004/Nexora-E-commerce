@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchProducts, Product } from '@/lib/api';
 import ProductCard from '@/components/ProductCard';
-import Hero from '@/components/Hero';
+import Hero from '@/components/HeroSection';
 import Footer from '@/components/Footer';
 import { Skeleton } from '@/components/ui/skeleton';
 

@@ -4,6 +4,15 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export interface Product {
+  inStock: boolean;
+  brand: string;
+  category: string;
+  stock: number;
+  isBestSeller: boolean;
+  isNew: boolean;
+  discount: number;
+  reviewCount: number;
+  rating: number;
   id: string;
   name: string;
   description: string;
@@ -12,6 +21,7 @@ export interface Product {
 }
 
 export interface CartItem {
+  description: ReactNode;
   id: string;
   productId: string;
   name: string;

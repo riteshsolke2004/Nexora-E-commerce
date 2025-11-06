@@ -23,7 +23,6 @@ const Navbar = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Categories for mega menu
   const categories = [
     {
       name: 'Electronics',
@@ -47,7 +46,6 @@ const Navbar = () => {
     }
   ];
 
-  // Close search dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -59,11 +57,9 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Search functionality with debounce
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (searchQuery.length > 2) {
-        // Simulate search results - replace with actual API call
         setSearchResults([
           { id: 1, name: 'Sample Product 1', category: 'Electronics', price: 299 },
           { id: 2, name: 'Sample Product 2', category: 'Fashion', price: 149 },
@@ -78,22 +74,7 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Top Bar */}
-      <div className="hidden lg:block bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs">
-        <div className="container py-2 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1 hover:text-blue-100 cursor-pointer transition-colors">
-              <MapPin className="h-3 w-3" />
-              <span>Deliver to Mumbai 400001</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hover:text-blue-100 cursor-pointer transition-colors">Sell on Vibe Commerce</span>
-            <span className="hover:text-blue-100 cursor-pointer transition-colors">Customer Care</span>
-            <span className="hover:text-blue-100 cursor-pointer transition-colors">Download App</span>
-          </div>
-        </div>
-      </div>
+   
 
       {/* Main Navbar */}
       <nav className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
@@ -101,9 +82,18 @@ const Navbar = () => {
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0">
-              <Store className="h-7 w-7 text-blue-600" />
+              <div className="h-10 w-10 relative">
+                <img 
+                  src="/logo.png" 
+                  alt="Vibe Commerce Logo"
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">
-                Vibe Commerce
+                E-Commerce
               </span>
             </Link>
 
@@ -121,13 +111,12 @@ const Navbar = () => {
                   />
                   <Button 
                     className="rounded-l-none h-11 px-6 bg-blue-600 hover:bg-blue-700"
-                    onClick={() => {/* Handle search */}}
+                    onClick={() => {}}
                   >
                     <Search className="h-4 w-4" />
                   </Button>
                 </div>
 
-                {/* Search Dropdown */}
                 {isSearchFocused && searchQuery.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50">
                     {searchResults.length > 0 ? (
@@ -138,7 +127,7 @@ const Navbar = () => {
                         {searchResults.map((result) => (
                           <Link
                             key={result.id}
-                            to={`/product/${result.id}`}
+                            to={`/products?q=${result.name}`}
                             className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0 transition-colors"
                             onClick={() => setIsSearchFocused(false)}
                           >
@@ -179,17 +168,23 @@ const Navbar = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    <span>Orders</span>
+                  <DropdownMenuItem asChild>
+                    <Link to="/orders" className="flex items-center cursor-pointer">
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      <span>Orders</span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Heart className="mr-2 h-4 w-4" />
-                    <span>Wishlist</span>
+                  <DropdownMenuItem asChild>
+                    <Link to="/wishlist" className="flex items-center cursor-pointer">
+                      <Heart className="mr-2 h-4 w-4" />
+                      <span>Wishlist</span>
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
@@ -201,7 +196,7 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Wishlist */}
+              {/* Wishlist Link */}
               <Link
                 to="/wishlist"
                 className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
@@ -210,7 +205,7 @@ const Navbar = () => {
                 <span className="text-sm font-medium hidden xl:inline">Wishlist</span>
               </Link>
 
-              {/* Cart */}
+              {/* Cart Link */}
               <Link
                 to="/cart"
                 className="relative flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
@@ -281,7 +276,7 @@ const Navbar = () => {
             </div>
 
             {/* Mobile Categories */}
-            <div className="space-y-2">
+            <div className="space-y-2 mb-6">
               <div className="font-semibold text-sm text-gray-500 mb-2">Categories</div>
               {categories.map((category) => (
                 <details key={category.name} className="group">
@@ -305,18 +300,22 @@ const Navbar = () => {
               ))}
             </div>
 
-            <div className="mt-6 pt-6 border-t space-y-2">
-              <Link to="/account" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
+            <div className="border-t pt-4 space-y-2">
+              <Link to="/profile" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
                 <User className="h-5 w-5" />
-                <span>My Account</span>
+                <span>My Profile</span>
               </Link>
-              <Link to="/wishlist" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
+              <Link to="/wishlist" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
                 <Heart className="h-5 w-5" />
                 <span>Wishlist</span>
               </Link>
-              <Link to="/orders" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
+              <Link to="/orders" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
                 <ShoppingCart className="h-5 w-5" />
                 <span>My Orders</span>
+              </Link>
+              <Link to="/cart" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
+                <ShoppingCart className="h-5 w-5" />
+                <span>Cart</span>
               </Link>
             </div>
           </div>
