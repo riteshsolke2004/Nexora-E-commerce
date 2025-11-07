@@ -1,10 +1,12 @@
-import { ShoppingCart, Store, Search, User, Heart, Menu, ChevronDown, MapPin, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShoppingCart, Search, User, Heart, Menu, ChevronDown, X, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useState, useRef, useEffect } from 'react';
+import * as api from '@/lib/api';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +18,15 @@ import {
 
 const Navbar = () => {
   const { getTotalItems } = useCart();
+  const { wishlistCount } = useWishlist();
+  const navigate = useNavigate();
   const totalItems = getTotalItems();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<api.Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const categories = [
@@ -46,6 +52,7 @@ const Navbar = () => {
     }
   ];
 
+  // Click outside to close search results
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -57,13 +64,29 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Search products from backend with debounce
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
+    const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length > 2) {
-        setSearchResults([
-          { id: 1, name: 'Sample Product 1', category: 'Electronics', price: 299 },
-          { id: 2, name: 'Sample Product 2', category: 'Fashion', price: 149 },
-        ]);
+        setIsSearching(true);
+        try {
+          // Fetch all products
+          const allProducts = await api.fetchProducts();
+          
+          // Filter products based on search query
+          const filteredProducts = allProducts.filter(product => 
+            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
+          );
+
+          setSearchResults(filteredProducts.slice(0, 5)); // Limit to 5 results
+        } catch (error) {
+          console.error('Search failed:', error);
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
       } else {
         setSearchResults([]);
       }
@@ -72,10 +95,25 @@ const Navbar = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
+  // Handle search submit
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+      setIsSearchFocused(false);
+      setSearchQuery('');
+    }
+  };
+
+  // Handle clicking on search result
+  const handleResultClick = (productId: string) => {
+    navigate(`/products`);
+    setIsSearchFocused(false);
+    setSearchQuery('');
+  };
+
   return (
     <>
-   
-
       {/* Main Navbar */}
       <nav className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
         <div className="container">
@@ -99,57 +137,97 @@ const Navbar = () => {
 
             {/* Search Bar */}
             <div ref={searchRef} className="flex-1 max-w-2xl relative hidden md:block">
-              <div className={`relative transition-all duration-200 ${isSearchFocused ? 'shadow-lg' : ''}`}>
-                <div className="relative flex">
-                  <Input
-                    type="text"
-                    placeholder="Search for products, brands and more..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    className="pr-10 h-11 border-2 focus:border-blue-500 rounded-r-none"
-                  />
-                  <Button 
-                    className="rounded-l-none h-11 px-6 bg-blue-600 hover:bg-blue-700"
-                    onClick={() => {}}
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {isSearchFocused && searchQuery.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50">
-                    {searchResults.length > 0 ? (
-                      <>
-                        <div className="p-2 text-xs text-gray-500 border-b">
-                          Search Results
-                        </div>
-                        {searchResults.map((result) => (
-                          <Link
-                            key={result.id}
-                            to={`/products?q=${result.name}`}
-                            className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0 transition-colors"
-                            onClick={() => setIsSearchFocused(false)}
-                          >
-                            <Search className="h-4 w-4 text-gray-400" />
-                            <div className="flex-1">
-                              <div className="text-sm font-medium">{result.name}</div>
-                              <div className="text-xs text-gray-500">{result.category}</div>
-                            </div>
-                            <div className="text-sm font-semibold text-blue-600">
-                              ${result.price}
-                            </div>
-                          </Link>
-                        ))}
-                      </>
-                    ) : (
-                      <div className="p-4 text-center text-sm text-gray-500">
-                        Type at least 3 characters to search
-                      </div>
-                    )}
+              <form onSubmit={handleSearchSubmit}>
+                <div className={`relative transition-all duration-200 ${isSearchFocused ? 'shadow-lg' : ''}`}>
+                  <div className="relative flex">
+                    <Input
+                      type="text"
+                      placeholder="Search for products, brands and more..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      className="pr-10 h-11 border-2 focus:border-blue-500 rounded-r-none"
+                    />
+                    <Button 
+                      type="submit"
+                      className="rounded-l-none h-11 px-6 bg-blue-600 hover:bg-blue-700"
+                      disabled={isSearching}
+                    >
+                      {isSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                )}
-              </div>
+
+                  {/* Search Results Dropdown */}
+                  {isSearchFocused && searchQuery.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-xl max-h-96 overflow-y-auto z-50">
+                      {isSearching ? (
+                        <div className="p-4 text-center">
+                          <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-blue-600" />
+                          <p className="text-sm text-gray-500">Searching...</p>
+                        </div>
+                      ) : searchResults.length > 0 ? (
+                        <>
+                          <div className="p-2 text-xs text-gray-500 border-b bg-gray-50">
+                            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                          </div>
+                          {searchResults.map((product) => (
+                            <button
+                              key={product.id}
+                              onClick={() => handleResultClick(product.id)}
+                              className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0 transition-colors text-left"
+                            >
+                              <div className="h-12 w-12 bg-gray-100 rounded flex-shrink-0 overflow-hidden">
+                                <img
+                                  src={product.imageUrl || product.image || 'https://via.placeholder.com/100'}
+                                  alt={product.name}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100';
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium line-clamp-1">{product.name}</div>
+                                <div className="text-xs text-gray-500 line-clamp-1">
+                                  {product.category || 'General'}
+                                </div>
+                                {product.description && (
+                                  <div className="text-xs text-gray-400 line-clamp-1 mt-1">
+                                    {product.description}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-sm font-semibold text-blue-600 flex-shrink-0">
+                                ${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}
+                              </div>
+                            </button>
+                          ))}
+                          <button
+                            onClick={handleSearchSubmit}
+                            className="w-full p-3 text-center text-sm text-blue-600 hover:bg-blue-50 font-medium border-t"
+                          >
+                            View all results for "{searchQuery}"
+                          </button>
+                        </>
+                      ) : searchQuery.length < 3 ? (
+                        <div className="p-4 text-center text-sm text-gray-500">
+                          Type at least 3 characters to search
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center">
+                          <Search className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">No products found</p>
+                          <p className="text-xs text-gray-400 mt-1">Try different keywords</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </form>
             </div>
 
             {/* Right Side Actions */}
@@ -199,10 +277,18 @@ const Navbar = () => {
               {/* Wishlist Link */}
               <Link
                 to="/wishlist"
-                className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
+                className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors relative"
               >
                 <Heart className="h-5 w-5" />
                 <span className="text-sm font-medium hidden xl:inline">Wishlist</span>
+                {wishlistCount > 0 && (
+                  <Badge
+                    variant="default"
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 hover:bg-red-500"
+                  >
+                    {wishlistCount}
+                  </Badge>
+                )}
               </Link>
 
               {/* Cart Link */}
@@ -247,7 +333,7 @@ const Navbar = () => {
                 <DropdownMenuContent className="w-48">
                   {category.subcategories.map((sub) => (
                     <DropdownMenuItem key={sub} asChild>
-                      <Link to={`/category/${sub.toLowerCase().replace(/\s+/g, '-')}`}>
+                      <Link to={`/products?category=${sub.toLowerCase().replace(/\s+/g, '-')}`}>
                         {sub}
                       </Link>
                     </DropdownMenuItem>
@@ -265,14 +351,20 @@ const Navbar = () => {
           <div className="p-4">
             {/* Mobile Search */}
             <div className="mb-4">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Search products..."
-                  className="pr-10"
-                />
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              </div>
+              <form onSubmit={handleSearchSubmit}>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </button>
+                </div>
+              </form>
             </div>
 
             {/* Mobile Categories */}
@@ -288,7 +380,7 @@ const Navbar = () => {
                     {category.subcategories.map((sub) => (
                       <Link
                         key={sub}
-                        to={`/category/${sub.toLowerCase().replace(/\s+/g, '-')}`}
+                        to={`/products?category=${sub.toLowerCase().replace(/\s+/g, '-')}`}
                         className="block p-2 text-sm hover:bg-gray-50 rounded"
                         onClick={() => setShowMobileMenu(false)}
                       >
@@ -305,17 +397,23 @@ const Navbar = () => {
                 <User className="h-5 w-5" />
                 <span>My Profile</span>
               </Link>
-              <Link to="/wishlist" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
+              <Link to="/wishlist" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg relative" onClick={() => setShowMobileMenu(false)}>
                 <Heart className="h-5 w-5" />
                 <span>Wishlist</span>
+                {wishlistCount > 0 && (
+                  <Badge className="ml-auto bg-red-500">{wishlistCount}</Badge>
+                )}
               </Link>
               <Link to="/orders" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
                 <ShoppingCart className="h-5 w-5" />
                 <span>My Orders</span>
               </Link>
-              <Link to="/cart" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg" onClick={() => setShowMobileMenu(false)}>
+              <Link to="/cart" className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg relative" onClick={() => setShowMobileMenu(false)}>
                 <ShoppingCart className="h-5 w-5" />
                 <span>Cart</span>
+                {totalItems > 0 && (
+                  <Badge className="ml-auto bg-orange-500">{totalItems}</Badge>
+                )}
               </Link>
             </div>
           </div>

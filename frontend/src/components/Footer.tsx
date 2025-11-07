@@ -67,36 +67,6 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Newsletter Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 py-12">
-        <div className="container">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="text-white">
-              <h3 className="text-2xl font-bold mb-2">Subscribe to Our Newsletter</h3>
-              <p className="text-blue-100">
-                Get the latest updates on new products and upcoming sales
-              </p>
-            </div>
-            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="flex-1 bg-white text-gray-900 border-0"
-              />
-              <Button
-                type="submit"
-                size="lg"
-                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold"
-              >
-                Subscribe
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
 
       {/* Main Footer Content */}
       <div className="container py-12">
