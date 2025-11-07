@@ -12,7 +12,7 @@ const app = express();
 const corsOptions = {
     origin: [
         'http://localhost:8080',
-        'https://e-commerce-beryl-five-53.vercel.app/',
+        'https://e-commerce-beryl-five-53.vercel.app',
         'http://localhost:3000',
         'http://127.0.0.1:8080',
         'http://127.0.0.1:5173',
