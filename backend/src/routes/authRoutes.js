@@ -1,34 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const {
+    signup,
+    login,
+    getMe,
+    updateProfile,
+    changePassword,
+} = require('../controllers/authController');
+const { protect } = require('../middleware/auth');
 
-// POST - Signup
-router.post('/signup', (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-        // TODO: Create user in MongoDB
-        res.json({
-            success: true,
-            message: 'User registered successfully',
-            user: { name, email },
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+// Public routes
+router.post('/signup', signup);
+router.post('/login', login);
 
-// POST - Login
-router.post('/login', (req, res) => {
-    try {
-        const { email, password } = req.body;
-        // TODO: Verify user from MongoDB
-        res.json({
-            success: true,
-            message: 'Login successful',
-            token: 'dummy_token',
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+// Protected routes
+router.get('/me', protect, getMe);
+router.put('/profile', protect, updateProfile);
+router.put('/change-password', protect, changePassword);
 
 module.exports = router;
