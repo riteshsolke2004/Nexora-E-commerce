@@ -101,7 +101,47 @@ Visit the application: **[https://e-commerce-beryl-five-53.vercel.app](https://e
 - [ ] Reviews & Ratings
 - [ ] Wishlist Feature
 
+
 ---
 
-## 📁 Project Structure
+## 🔧 Installation & Setup
+
+### **Prerequisites**
+- Node.js (v16+)
+- npm or yarn
+- MongoDB Atlas Account
+- Git
+
+### **Backend Setup**
+
+Clone the repository
+git clone https://github.com/yourusername/e-commerce.git
+cd backend
+
+Install dependencies
+npm install
+
+Run the Server 
+npm run dev
+
+Server runs on http://localhost:5000
+
+Navigate to frontend directory
+cd frontend
+
+Install dependencies
+npm install
+
+Create .env file
+cat > .env.production << EOF
+VITE_API_URL=https://e-commerce-4kpd.onrender.com/api
+EOF
+
+Install dependencies
+npm install
+
+Start development server
+npm run dev
+
+Frontend runs on http://localhost:5173
 
