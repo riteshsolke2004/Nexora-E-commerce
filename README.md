@@ -115,7 +115,7 @@ Visit the application: **[https://e-commerce-beryl-five-53.vercel.app](https://e
 ### **Backend Setup**
 
 Clone the repository
-git clone https://github.com/yourusername/e-commerce.git
+git clone [https://github.com/yourusername/e-commerce.git](https://github.com/riteshsolke2004/Nexora-E-commerce.git)
 cd backend
 
 Install dependencies
