@@ -11,19 +11,19 @@ A modern, full-stack e-commerce application with responsive design, real-time pr
 ## 📸 Screenshots
 
 ### Homepage with Hero Section
-![Hero Section](./screenshots/Screenshot 2025-11-07 201551.png)
+![Hero Section](./screenshots/hero-section.png)
 
 ### Product Categories
 ![Categories](./screenshots/categories.png)
 
 ### Super Dhamaka Offers Section
-![Deals](./screenshots/super-dhamaka-offers.png)
+![Deals](./screenshots/super-dhamaka.png)
 
 ### Shopping Cart
-![Cart](./screenshots/shopping-cart.png)
+![Cart](./screenshots/cart.png)
 
 ### Product Details
-![Product Details](./screenshots/product-details.png)
+![Product Details](./screenshots/product.png)
 
 ### Checkout Page
 ![Checkout](./screenshots/checkout.png)
