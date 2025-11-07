@@ -31,6 +31,12 @@ A modern, full-stack e-commerce application with responsive design, real-time pr
 ### Checkout Page
 ![Checkout](./screenshots/checkout.png)
 
+### Order Page
+![Checkout](./screenshots/order.png)
+
+### Footer Page
+![Checkout](./screenshots/footer.png)
+
 ---
 
 ## 🚀 Live Demo
