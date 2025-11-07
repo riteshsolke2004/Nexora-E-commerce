@@ -11,7 +11,7 @@ A modern, full-stack e-commerce application with responsive design, real-time pr
 ## 📸 Screenshots
 
 ### Homepage with Hero Section
-![Hero Section](./screenshots/hero-section.png)
+![Hero Section](./screenshots/Screenshot 2025-11-07 201551.png)
 
 ### Product Categories
 ![Categories](./screenshots/categories.png)
