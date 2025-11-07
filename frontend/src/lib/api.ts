@@ -1,6 +1,6 @@
 // ==================== CONFIGURATION ====================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://e-commerce-4kpd.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Generate or get userId from localStorage
 const getUserId = (): string => {
