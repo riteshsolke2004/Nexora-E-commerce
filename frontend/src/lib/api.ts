@@ -1,264 +1,342 @@
-// API integration layer for Vibe Commerce
-// This connects to the backend REST API
+// ==================== CONFIGURATION ====================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+// Generate or get userId from localStorage
+const getUserId = (): string => {
+  let userId = localStorage.getItem('userId');
+  if (!userId) {
+    userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('userId', userId);
+  }
+  return userId;
+};
+
+// ==================== INTERFACES ====================
 
 export interface Product {
-  inStock: boolean;
-  brand: string;
-  category: string;
-  stock: number;
-  isBestSeller: boolean;
-  isNew: boolean;
-  discount: number;
-  reviewCount: number;
-  rating: number;
   id: string;
   name: string;
-  description: string;
   price: number;
+  description?: string;
+  imageUrl?: string;
   image?: string;
+  category?: string;
+  stock?: number;
+  brand?: string;
+  rating?: number;
+  reviewCount?: number;
+  discount?: number;
+  isNew?: boolean;
+  isBestSeller?: boolean;
+  inStock?: boolean;
 }
 
 export interface CartItem {
-  description: ReactNode;
   id: string;
+  cartId: string;
   productId: string;
   name: string;
   price: number;
-  quantity: number;
+  imageUrl?: string;
   image?: string;
+  qty: number;
+  quantity: number;
+  description?: string;
 }
 
 export interface Cart {
+  userId?: string;
   items: CartItem[];
   subtotal: number;
   tax: number;
   total: number;
 }
 
-export interface CheckoutData {
+export interface Receipt {
+  receiptId: string;
+  name: string;
+  email: string;
+  items: CartItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  timestamp: string;
+  status: string;
+}
+
+export interface CheckoutPayload {
   name: string;
   email: string;
   cartItems: CartItem[];
 }
 
-export interface CheckoutResponse {
-  success: boolean;
-  orderId: string;
-  timestamp: string;
-  total: number;
+// Helper function to normalize CartItem
+export const normalizeCartItem = (item: any): CartItem => {
+  return {
+    id: item.cartId || item.id || '',
+    cartId: item.cartId || item.id || '',
+    productId: item.productId || '',
+    name: item.name || '',
+    price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+    imageUrl: item.imageUrl || item.image,
+    image: item.image || item.imageUrl,
+    qty: typeof item.qty === 'string' ? parseInt(item.qty, 10) : item.qty,
+    quantity: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity || (typeof item.qty === 'string' ? parseInt(item.qty, 10) : item.qty),
+    description: item.description,
+  };
+};
+
+// ==================== API REQUEST HANDLER ====================
+
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const userId = getUserId();
+
+  console.log('🔑 userId from localStorage:', userId); // Debug log
+
+  const defaultHeaders: HeadersInit = {
+    'Content-Type': 'application/json',
+    'userId': userId, // Make sure this is being sent
+  };
+
+  const config: RequestInit = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...(options.headers || {}),
+    },
+  };
+
+  console.log('📤 Sending request with headers:', config.headers); // Debug log
+
+  try {
+    console.log(`📡 ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errorMessage = data.error || `HTTP ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('❌ API Error:', error);
+    throw error;
+  }
 }
 
-// Products API
+
+// ==================== PRODUCT API ====================
+
 export const fetchProducts = async (): Promise<Product[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/products`);
-    if (!response.ok) throw new Error('Failed to fetch products');
-    return await response.json();
+    const response = await apiRequest<{ success: boolean; data: Product[] }>(
+      '/products'
+    );
+    return response.data || [];
   } catch (error) {
-    console.error('Error fetching products:', error);
-    // Return mock data for development
-    return getMockProducts();
+    console.error('Failed to fetch products:', error);
+    throw error;
   }
 };
 
-// Cart API
+export const fetchProductById = async (id: string): Promise<Product> => {
+  const response = await apiRequest<{ success: boolean; data: Product }>(
+    `/products/${id}`
+  );
+  return response.data;
+};
+
+// ==================== CART API ====================
+
 export const fetchCart = async (): Promise<Cart> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/cart`);
-    if (!response.ok) throw new Error('Failed to fetch cart');
-    return await response.json();
+    const response = await apiRequest<{ success: boolean; data: Cart }>(
+      '/cart'
+    );
+    const normalizedItems = response.data.items.map(normalizeCartItem);
+    return {
+      ...response.data,
+      items: normalizedItems,
+    };
   } catch (error) {
-    console.error('Error fetching cart:', error);
-    // Return from localStorage for development
-    return getCartFromLocalStorage();
+    console.error('Failed to fetch cart:', error);
+    return { items: [], subtotal: 0, tax: 0, total: 0 };
   }
 };
 
-export const addToCart = async (productId: string, quantity: number = 1): Promise<Cart> => {
+export const addToCart = async (
+  productId: string,
+  quantity: number = 1
+): Promise<Cart> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/cart`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, quantity }),
-    });
-    if (!response.ok) throw new Error('Failed to add to cart');
-    return await response.json();
+    const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+    const response = await apiRequest<{ success: boolean; data: Cart }>(
+      '/cart',
+      {
+        method: 'POST',
+        body: JSON.stringify({ productId, qty }),
+      }
+    );
+    const normalizedItems = response.data.items.map(normalizeCartItem);
+    return {
+      ...response.data,
+      items: normalizedItems,
+    };
   } catch (error) {
-    console.error('Error adding to cart:', error);
-    // Use localStorage fallback
-    return addToCartLocalStorage(productId, quantity);
+    console.error('Failed to add to cart:', error);
+    throw error;
   }
 };
 
-export const removeFromCart = async (itemId: string): Promise<Cart> => {
+export const removeFromCart = async (cartId: string): Promise<Cart> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
+    const response = await apiRequest<{ success: boolean; data: Cart }>(
+      `/cart/${cartId}`,
+      { method: 'DELETE' }
+    );
+    const normalizedItems = response.data.items.map(normalizeCartItem);
+    return {
+      ...response.data,
+      items: normalizedItems,
+    };
+  } catch (error) {
+    console.error('Failed to remove from cart:', error);
+    throw error;
+  }
+};
+
+export const updateCartQuantity = async (
+  cartId: string,
+  quantity: number
+): Promise<Cart> => {
+  try {
+    const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+    const response = await apiRequest<{ success: boolean; data: Cart }>(
+      `/cart/${cartId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ qty }),
+      }
+    );
+    const normalizedItems = response.data.items.map(normalizeCartItem);
+    return {
+      ...response.data,
+      items: normalizedItems,
+    };
+  } catch (error) {
+    console.error('Failed to update cart quantity:', error);
+    throw error;
+  }
+};
+
+export const clearCartAPI = async (): Promise<void> => {
+  try {
+    await apiRequest<{ success: boolean }>('/cart', {
       method: 'DELETE',
     });
-    if (!response.ok) throw new Error('Failed to remove from cart');
-    return await response.json();
   } catch (error) {
-    console.error('Error removing from cart:', error);
-    return removeFromCartLocalStorage(itemId);
+    console.error('Failed to clear cart:', error);
+    throw error;
   }
 };
 
-export const updateCartQuantity = async (itemId: string, quantity: number): Promise<Cart> => {
+// ==================== CHECKOUT API ====================
+
+export const checkoutAPI = async (
+  payload: CheckoutPayload
+): Promise<Receipt> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/cart/${itemId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quantity }),
-    });
-    if (!response.ok) throw new Error('Failed to update cart');
-    return await response.json();
+    // Transform cartItems to match backend format
+    const cartItems = payload.cartItems.map(item => ({
+      cartId: item.cartId || item.id,
+      productId: item.productId,
+      name: item.name,
+      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+      qty: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity,
+    }));
+
+    const response = await apiRequest<{ success: boolean; data: Receipt }>(
+      '/checkout',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          name: payload.name,
+          email: payload.email,
+          cartItems,
+        }),
+      }
+    );
+
+    return response.data;
   } catch (error) {
-    console.error('Error updating cart:', error);
-    return updateCartQuantityLocalStorage(itemId, quantity);
+    console.error('Checkout failed:', error);
+    throw error;
   }
 };
 
-// Checkout API
-export const checkout = async (data: CheckoutData): Promise<CheckoutResponse> => {
+export const getReceipt = async (receiptId: string): Promise<Receipt> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Checkout failed');
-    return await response.json();
+    const response = await apiRequest<{ success: boolean; data: Receipt }>(
+      `/checkout/receipt/${receiptId}`
+    );
+    return response.data;
   } catch (error) {
-    console.error('Error during checkout:', error);
-    // Mock successful checkout
-    return {
-      success: true,
-      orderId: `ORD-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      total: data.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 1.08,
-    };
+    console.error('Failed to get receipt:', error);
+    throw error;
   }
 };
 
-// LocalStorage helpers (fallback when API is not available)
-const getCartFromLocalStorage = (): Cart => {
-  const stored = localStorage.getItem('vibeCommerce_cart');
-  if (stored) {
-    const items: CartItem[] = JSON.parse(stored);
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const tax = subtotal * 0.08;
-    return { items, subtotal, tax, total: subtotal + tax };
+// ==================== ORDERS API ====================
+
+export interface OrderItem {
+  cartId?: string;
+  productId: string;
+  name: string;
+  price: number;
+  qty: number;
+  quantity?: number;
+}
+
+export interface Order {
+  receiptId: string;
+  orderId?: string;
+  id?: string;
+  name: string;
+  email: string;
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  timestamp: string;
+  status: 'completed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  date?: string;
+}
+
+export const getOrdersByEmail = async (email: string): Promise<Order[]> => {
+  try {
+    const response = await apiRequest<{ success: boolean; data: Order[] }>(
+      `/checkout/receipts/email?email=${encodeURIComponent(email)}`
+    );
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    throw error;
   }
-  return { items: [], subtotal: 0, tax: 0, total: 0 };
 };
 
-const saveCartToLocalStorage = (items: CartItem[]): Cart => {
-  localStorage.setItem('vibeCommerce_cart', JSON.stringify(items));
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.08;
-  return { items, subtotal, tax, total: subtotal + tax };
-};
-
-const addToCartLocalStorage = (productId: string, quantity: number): Cart => {
-  const products = getMockProducts();
-  const product = products.find(p => p.id === productId);
-  if (!product) throw new Error('Product not found');
-
-  const cart = getCartFromLocalStorage();
-  const existingItem = cart.items.find(item => item.productId === productId);
-
-  if (existingItem) {
-    existingItem.quantity += quantity;
-  } else {
-    cart.items.push({
-      id: `item-${Date.now()}`,
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      quantity,
-      image: product.image,
-    });
+export const getOrderById = async (orderId: string): Promise<Order> => {
+  try {
+    const response = await apiRequest<{ success: boolean; data: Order }>(
+      `/checkout/receipt/${orderId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch order:', error);
+    throw error;
   }
-
-  return saveCartToLocalStorage(cart.items);
 };
-
-const removeFromCartLocalStorage = (itemId: string): Cart => {
-  const cart = getCartFromLocalStorage();
-  const updatedItems = cart.items.filter(item => item.id !== itemId);
-  return saveCartToLocalStorage(updatedItems);
-};
-
-const updateCartQuantityLocalStorage = (itemId: string, quantity: number): Cart => {
-  const cart = getCartFromLocalStorage();
-  const item = cart.items.find(i => i.id === itemId);
-  if (item) {
-    if (quantity <= 0) {
-      return removeFromCartLocalStorage(itemId);
-    }
-    item.quantity = quantity;
-  }
-  return saveCartToLocalStorage(cart.items);
-};
-
-// Mock data for development
-const getMockProducts = (): Product[] => [
-  {
-    id: '1',
-    name: 'Premium Wireless Headphones',
-    description: 'High-quality audio with active noise cancellation',
-    price: 299.99,
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500',
-  },
-  {
-    id: '2',
-    name: 'Smart Watch Pro',
-    description: 'Fitness tracking and smart notifications',
-    price: 399.99,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500',
-  },
-  {
-    id: '3',
-    name: 'Designer Sunglasses',
-    description: 'UV protection with modern style',
-    price: 159.99,
-    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500',
-  },
-  {
-    id: '4',
-    name: 'Leather Backpack',
-    description: 'Durable and spacious for everyday use',
-    price: 129.99,
-    image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500',
-  },
-  {
-    id: '5',
-    name: 'Portable Speaker',
-    description: 'Waterproof with 360° sound',
-    price: 89.99,
-    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=500',
-  },
-  {
-    id: '6',
-    name: 'Minimalist Wallet',
-    description: 'Slim design with RFID protection',
-    price: 49.99,
-    image: 'https://images.unsplash.com/photo-1627123424574-724758594e93?w=500',
-  },
-  {
-    id: '7',
-    name: 'Wireless Keyboard',
-    description: 'Mechanical keys with RGB lighting',
-    price: 149.99,
-    image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500',
-  },
-  {
-    id: '8',
-    name: 'Coffee Maker Deluxe',
-    description: 'Programmable with thermal carafe',
-    price: 179.99,
-    image: 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=500',
-  },
-];

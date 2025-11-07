@@ -1,16 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Cart, CartItem, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, updateCartQuantity as apiUpdateCartQuantity, fetchCart } from '@/lib/api';
+import {
+  Cart,
+  CartItem,
+  addToCart as apiAddToCart,
+  removeFromCart as apiRemoveFromCart,
+  updateCartQuantity as apiUpdateCartQuantity,
+  fetchCart,
+  clearCartAPI,
+} from '@/lib/api';
 import { toast } from 'sonner';
 
 interface CartContextType {
   cart: Cart;
   isLoading: boolean;
   addToCart: (productId: string, productName: string, quantity?: number) => Promise<void>;
-  removeFromCart: (itemId: string) => Promise<void>;
-  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
-  clearCart: () => void;
+  removeFromCart: (cartId: string) => Promise<void>;
+  updateQuantity: (cartId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   itemCount: number;
-  // Add these methods
   getTotalItems: () => number;
   getSubtotal: () => number;
   getTax: () => number;
@@ -20,9 +27,15 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cart, setCart] = useState<Cart>({ items: [], subtotal: 0, tax: 0, total: 0 });
+  const [cart, setCart] = useState<Cart>({
+    items: [],
+    subtotal: 0,
+    tax: 0,
+    total: 0,
+  });
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load cart on mount
   useEffect(() => {
     loadCart();
   }, []);
@@ -32,102 +45,142 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       const cartData = await fetchCart();
       setCart(cartData);
+      console.log('✅ Cart loaded:', cartData);
     } catch (error) {
-      console.error('Failed to load cart:', error);
+      console.error('❌ Failed to load cart:', error);
+      setCart({ items: [], subtotal: 0, tax: 0, total: 0 });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const addToCart = async (productId: string, productName: string, quantity = 1) => {
+  const addToCart = async (
+    productId: string,
+    productName: string,
+    quantity: number = 1
+  ) => {
     setIsLoading(true);
     try {
-      const updatedCart = await apiAddToCart(productId, quantity);
+      // Ensure quantity is a number
+      const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+      
+      const updatedCart = await apiAddToCart(productId, qty);
       setCart(updatedCart);
       toast.success(`${productName} added to cart!`, {
-        description: `Quantity: ${quantity}`,
+        description: `Quantity: ${qty}`,
       });
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast.error('Failed to add item to cart');
+      console.log('✅ Item added to cart:', updatedCart);
+    } catch (error: any) {
+      console.error('❌ Failed to add to cart:', error);
+      toast.error(error.message || 'Failed to add item to cart');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const removeFromCart = async (itemId: string) => {
+  const removeFromCart = async (cartId: string) => {
     setIsLoading(true);
     try {
-      const updatedCart = await apiRemoveFromCart(itemId);
+      const updatedCart = await apiRemoveFromCart(cartId);
       setCart(updatedCart);
       toast.success('Item removed from cart');
-    } catch (error) {
-      console.error('Failed to remove from cart:', error);
-      toast.error('Failed to remove item');
+      console.log('✅ Item removed from cart:', updatedCart);
+    } catch (error: any) {
+      console.error('❌ Failed to remove from cart:', error);
+      toast.error(error.message || 'Failed to remove item');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const updateQuantity = async (itemId: string, quantity: number) => {
+  const updateQuantity = async (cartId: string, quantity: number) => {
+    // Ensure quantity is a number
+    const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+    
+    if (qty < 1) {
+      await removeFromCart(cartId);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const updatedCart = await apiUpdateCartQuantity(itemId, quantity);
+      const updatedCart = await apiUpdateCartQuantity(cartId, qty);
       setCart(updatedCart);
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
-      toast.error('Failed to update quantity');
+      console.log('✅ Quantity updated:', updatedCart);
+    } catch (error: any) {
+      console.error('❌ Failed to update quantity:', error);
+      toast.error(error.message || 'Failed to update quantity');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const clearCart = () => {
-    localStorage.removeItem('vibeCommerce_cart');
-    setCart({ items: [], subtotal: 0, tax: 0, total: 0 });
+  const clearCart = async () => {
+    setIsLoading(true);
+    try {
+      await clearCartAPI();
+      setCart({ items: [], subtotal: 0, tax: 0, total: 0 });
+      toast.success('Cart cleared');
+      console.log('✅ Cart cleared');
+    } catch (error: any) {
+      console.error('❌ Failed to clear cart:', error);
+      toast.error(error.message || 'Failed to clear cart');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to safely get quantity
+  const getItemQuantity = (item: CartItem): number => {
+    const qty = item.quantity ?? item.qty;
+    return typeof qty === 'string' ? parseInt(qty, 10) : qty;
   };
 
   // Calculate item count
-  const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = cart.items.reduce((sum, item) => sum + getItemQuantity(item), 0);
 
-  // Method 1: Get total items (same as itemCount)
+  // Get total items
   const getTotalItems = () => {
-    return cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    return cart.items.reduce((sum, item) => sum + getItemQuantity(item), 0);
   };
 
-  // Method 2: Get subtotal (sum of all items before tax)
+  // Get subtotal
   const getSubtotal = () => {
     return cart.items.reduce((sum, item) => {
-      return sum + (item.price * item.quantity);
+      const qty = getItemQuantity(item);
+      const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
+      return sum + price * qty;
     }, 0);
   };
 
-  // Method 3: Get tax (usually 8% or as per your backend)
+  // Get tax
   const getTax = () => {
-    return cart.tax || (getSubtotal() * 0.08);
+    const tax = typeof cart.tax === 'string' ? parseFloat(cart.tax) : cart.tax;
+    return isNaN(tax) ? 0 : tax;
   };
 
-  // Method 4: Get total (subtotal + tax)
+  // Get total
   const getTotal = () => {
-    return cart.total || (getSubtotal() + getTax());
+    const total = typeof cart.total === 'string' ? parseFloat(cart.total) : cart.total;
+    return isNaN(total) ? 0 : total;
+  };
+
+  const value: CartContextType = {
+    cart,
+    isLoading,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    itemCount,
+    getTotalItems,
+    getSubtotal,
+    getTax,
+    getTotal,
   };
 
   return (
-    <CartContext.Provider
-      value={{
-        cart,
-        isLoading,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        itemCount,
-        getTotalItems,
-        getSubtotal,
-        getTax,
-        getTotal,
-      }}
-    >
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

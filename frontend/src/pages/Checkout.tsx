@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import * as api from '@/lib/api';
 import {
   MapPin,
   Package,
@@ -17,13 +18,16 @@ import {
   Shield,
   ArrowLeft,
   Banknote,
+  Loader2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import ReceiptModal, { CheckoutResponse } from '@/components/ReceiptModal';
 
 const Checkout = () => {
-  const { cart, getSubtotal, getTax, getTotal } = useCart();
+  // ✅ CALL ALL HOOKS AT TOP LEVEL
+  const { cart, clearCart, getSubtotal, getTax, getTotal, isLoading } = useCart();
+
   const [step, setStep] = useState<'shipping' | 'confirmation'>('shipping');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,35 +82,79 @@ const Checkout = () => {
     toast.success('Shipping information saved');
   };
 
-  // Handle place order (COD)
-  const handlePlaceOrder = (e: React.FormEvent) => {
-    e.preventDefault();
+  // ✅ NOW USE clearCart FROM THE TOP-LEVEL HOOK
+  const handlePlaceOrder = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!agreeTerms) {
-      toast.error('Please agree to the terms and conditions');
-      return;
-    }
+  // Validation
+  if (!agreeTerms) {
+    toast.error('Please agree to the terms and conditions');
+    return;
+  }
 
-    // Process order
-    setIsProcessing(true);
+  if (cart.items.length === 0) {
+    toast.error('Your cart is empty');
+    return;
+  }
 
-    // Simulate order processing
-    setTimeout(() => {
-      const receipt: CheckoutResponse = {
-        orderId: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-        timestamp: new Date().toISOString(),
-        total: getTotal(),
-      };
+  setIsProcessing(true);
 
-      setReceiptData(receipt);
-      setShowReceipt(true);
-      setIsProcessing(false);
-      toast.success('Order placed successfully! Pay at delivery.');
-    }, 2000);
-  };
+  try {
+    console.log('📦 Placing order...');
+
+    // Get cart items
+    const cartItems = cart.items || [];
+
+    // Call checkout API
+    const receipt = await api.checkoutAPI({
+      name: `${shippingData.firstName} ${shippingData.lastName}`,
+      email: shippingData.email,
+      cartItems: cartItems,
+    });
+
+    console.log('✅ Order placed:', receipt);
+
+    // ✅ SAVE EMAIL FOR ORDERS PAGE
+    localStorage.setItem('userEmail', shippingData.email);
+
+    // ✅ CLEAR CART AFTER SUCCESSFUL ORDER
+    await clearCart();
+
+    // ✅ SHOW SUCCESS MESSAGE
+    toast.success('Order placed successfully!');
+
+    // ✅ SHOW RECEIPT
+    setReceiptData({
+      orderId: receipt.receiptId,
+      timestamp: receipt.timestamp,
+      total: receipt.total,
+    });
+    setShowReceipt(true);
+
+    // ✅ OPTIONAL: Reset form and step
+    // setStep('shipping');
+    // setShippingData({
+    //   firstName: '',
+    //   lastName: '',
+    //   email: '',
+    //   phone: '',
+    //   street: '',
+    //   city: '',
+    //   state: '',
+    //   zipCode: '',
+    //   country: 'USA',
+    // });
+  } catch (error: any) {
+    console.error('❌ Checkout failed:', error);
+    toast.error(error.message || 'Failed to place order. Please try again.');
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
 
   // Empty cart check
-  if (cart.items.length === 0) {
+  if (cart.items.length === 0 && !showReceipt) {
     return (
       <div className="container py-16 min-h-screen">
         <div className="flex flex-col items-center justify-center text-center space-y-6">
@@ -575,9 +623,16 @@ const Checkout = () => {
                         size="lg"
                         className="flex-1"
                         onClick={handlePlaceOrder}
-                        disabled={isProcessing}
+                        disabled={isProcessing || isLoading}
                       >
-                        {isProcessing ? 'Processing...' : 'Place Order'}
+                        {isProcessing || isLoading ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Place Order'
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -600,17 +655,17 @@ const Checkout = () => {
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {cart.items.map((item) => (
                     <div
-                      key={item.id}
+                      key={item.id || item.cartId}
                       className="flex justify-between text-sm pb-3 border-b last:border-b-0 last:pb-0"
                     >
                       <div>
                         <p className="font-medium line-clamp-1">{item.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          Qty: {item.quantity}
+                          Qty: {item.quantity || item.qty}
                         </p>
                       </div>
                       <p className="font-semibold text-right">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        ${(item.price * (item.quantity || item.qty)).toFixed(2)}
                       </p>
                     </div>
                   ))}

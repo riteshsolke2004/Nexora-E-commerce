@@ -44,27 +44,7 @@ const Footer = () => {
       { name: 'Careers', href: '/careers' },
       { name: 'Press', href: '/press' },
       { name: 'Corporate Information', href: '/corporate' },
-    ],
-    helpSupport: [
-      { name: 'Payments', href: '/help/payments' },
-      { name: 'Shipping', href: '/help/shipping' },
-      { name: 'Cancellation & Returns', href: '/help/returns' },
-      { name: 'FAQ', href: '/help/faq' },
-      { name: 'Report Infringement', href: '/report' },
-    ],
-    policy: [
-      { name: 'Return Policy', href: '/policy/returns' },
-      { name: 'Terms of Use', href: '/terms' },
-      { name: 'Security', href: '/security' },
-      { name: 'Privacy', href: '/privacy' },
-      { name: 'Sitemap', href: '/sitemap' },
-    ],
-    socialMedia: [
-      { name: 'Become a Seller', href: '/seller' },
-      { name: 'Advertise', href: '/advertise' },
-      { name: 'Gift Cards', href: '/gift-cards' },
-      { name: 'Help Center', href: '/help' },
-    ],
+    ],  
     popularCategories: [
       { name: 'Electronics', href: '/category/electronics' },
       { name: 'Fashion', href: '/category/fashion' },
@@ -120,7 +100,7 @@ const Footer = () => {
 
       {/* Main Footer Content */}
       <div className="container py-12">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8">
           {/* About Us */}
           <div>
             <h4 className="text-white font-semibold mb-4 uppercase text-sm">About</h4>
@@ -139,59 +119,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Help & Support */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 uppercase text-sm">Help</h4>
-            <ul className="space-y-2">
-              {footerLinks.helpSupport.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-sm hover:text-white transition-colors flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 -ml-4 group-hover:ml-0 transition-all" />
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Policy */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 uppercase text-sm">Policy</h4>
-            <ul className="space-y-2">
-              {footerLinks.policy.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-sm hover:text-white transition-colors flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 -ml-4 group-hover:ml-0 transition-all" />
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Social Media */}
-          <div>
-            <h4 className="text-white font-semibold mb-4 uppercase text-sm">Social</h4>
-            <ul className="space-y-2">
-              {footerLinks.socialMedia.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-sm hover:text-white transition-colors flex items-center gap-1 group"
-                  >
-                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 -ml-4 group-hover:ml-0 transition-all" />
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
 
           {/* Categories */}
           <div>
@@ -257,10 +184,10 @@ const Footer = () => {
               <Shield className="h-6 w-6 text-green-400" />
             </div>
             <div>
-              <h5 className="text-white font-semibold text-sm">Secure Payment</h5>
+              <h5 className="text-white font-semibold text-sm">Cash On Delivery</h5>
               <p className="text-xs text-gray-400">100% Protected</p>
             </div>
-          </div>
+          </div> 
 
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-purple-600/20 flex items-center justify-center flex-shrink-0">
@@ -334,24 +261,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Payment Methods */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-semibold text-white">We Accept:</span>
-            <div className="flex gap-2">
-              <div className="h-8 px-3 bg-white rounded flex items-center">
-                <span className="text-blue-600 font-bold text-xs">VISA</span>
-              </div>
-              <div className="h-8 px-3 bg-white rounded flex items-center">
-                <span className="text-orange-600 font-bold text-xs">MASTER</span>
-              </div>
-              <div className="h-8 px-3 bg-white rounded flex items-center">
-                <span className="text-blue-700 font-bold text-xs">PayPal</span>
-              </div>
-              <div className="h-8 px-3 bg-white rounded flex items-center">
-                <span className="text-purple-600 font-bold text-xs">UPI</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
