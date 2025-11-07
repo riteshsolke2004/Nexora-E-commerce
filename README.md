@@ -20,7 +20,13 @@ A modern, full-stack e-commerce application with responsive design, real-time pr
 ![Cart](./screenshots/cart.png)
 
 ### Product Details
-![Product Details](./screenshots/product.png)
+![Product Details](./screenshots/products.png)
+
+### Profile Page
+![Checkout](./screenshots/profile.png)
+
+### Wishlist Page
+![Checkout](./screenshots/wishlist.png)
 
 ### Checkout Page
 ![Checkout](./screenshots/checkout.png)
