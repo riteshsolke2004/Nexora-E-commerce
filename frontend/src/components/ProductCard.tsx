@@ -1,11 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Check, Heart, Eye, Star, Zap, TrendingUp, Loader2 } from 'lucide-react';
+import {
+  ShoppingCart,
+  Check,
+  Heart,
+  Eye,
+  Star,
+  Zap,
+  TrendingUp,
+  Loader2,
+} from 'lucide-react';
 import { Product } from '@/lib/api';
 import { useCart } from '@/contexts/CartContext';
-import { useWishlist } from '@/contexts/WishlistContext'; // ✅ Import wishlist hook
+import { useWishlist } from '@/contexts/WishlistContext';
+import { useAuth } from '@/contexts/AuthContext'; // ✅ Add auth hook
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -23,9 +34,11 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   // ✅ ALL HOOKS AT TOP LEVEL
+  const navigate = useNavigate();
   const { addToCart, isLoading } = useCart();
-  const { isInWishlist, toggleWishlist } = useWishlist(); // ✅ Add wishlist hooks
-  
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { isAuthenticated } = useAuth(); // ✅ Check authentication
+
   // ✅ ALL STATE AT TOP LEVEL
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -45,8 +58,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
   // ✅ Check if product is in wishlist
   const isWishlisted = isInWishlist(product.id);
 
-  // ✅ Handle add to cart
+  // ✅ PROTECTED: Handle add to cart
   const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+
     if (isOutOfStock) {
       toast.error('Out of stock');
       return;
@@ -65,10 +84,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
   };
 
-  // ✅ Handle wishlist toggle
+  // ✅ PROTECTED: Handle wishlist toggle
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to wishlist');
+      navigate('/login');
+      return;
+    }
 
     toggleWishlist({
       id: product.id,
@@ -113,7 +138,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         )}
       </div>
 
-      {/* ✅ WISHLIST BUTTON - Connected to WishlistContext */}
+      {/* ✅ WISHLIST BUTTON - Protected */}
       <Button
         variant="ghost"
         size="icon"
@@ -134,7 +159,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
-          src={product.imageUrl || product.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'}
+          src={
+            product.imageUrl ||
+            product.image ||
+            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'
+          }
           alt={product.name}
           className={cn(
             'h-full w-full object-cover transition-transform duration-300 group-hover:scale-110',
@@ -143,7 +172,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
           loading="lazy"
           onLoad={() => setImageLoaded(true)}
           onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
+            (e.target as HTMLImageElement).src =
+              'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
           }}
         />
 
@@ -160,15 +190,22 @@ const ProductCard = ({ product }: ProductCardProps) => {
               <DialogContent className="max-w-3xl">
                 <DialogHeader>
                   <DialogTitle>{product.name}</DialogTitle>
-                  <DialogDescription>{product.description}</DialogDescription>
+                  <DialogDescription>
+                    {product.description}
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid md:grid-cols-2 gap-6">
                   <img
-                    src={product.imageUrl || product.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'}
+                    src={
+                      product.imageUrl ||
+                      product.image ||
+                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500'
+                    }
                     alt={product.name}
                     className="w-full rounded-lg object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500';
                     }}
                   />
                   <div className="space-y-4">
@@ -194,7 +231,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     <div className="space-y-2">
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold">
-                          ${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}
+                          $
+                          {typeof product.price === 'string'
+                            ? parseFloat(product.price).toFixed(2)
+                            : product.price.toFixed(2)}
                         </span>
                         {originalPrice && (
                           <span className="text-lg text-muted-foreground line-through">
@@ -204,7 +244,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
                       </div>
                       {discount > 0 && originalPrice && (
                         <p className="text-sm text-green-600 font-semibold">
-                          Save ${(originalPrice - product.price).toFixed(2)} ({discount}%)
+                          Save $
+                          {(originalPrice - product.price).toFixed(2)} (
+                          {discount}%)
                         </p>
                       )}
                     </div>
@@ -212,11 +254,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     {/* Stock Info */}
                     <div className="text-sm">
                       {isOutOfStock ? (
-                        <p className="text-red-600 font-semibold">Out of Stock</p>
+                        <p className="text-red-600 font-semibold">
+                          Out of Stock
+                        </p>
                       ) : isLowStock ? (
-                        <p className="text-orange-600 font-semibold">Only {stock} items left!</p>
+                        <p className="text-orange-600 font-semibold">
+                          Only {stock} items left!
+                        </p>
                       ) : (
-                        <p className="text-green-600 font-semibold">In Stock</p>
+                        <p className="text-green-600 font-semibold">
+                          In Stock
+                        </p>
                       )}
                     </div>
 
@@ -224,11 +272,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     <div className="flex gap-2">
                       <Button
                         onClick={handleAddToCart}
-                        disabled={isAdding || isLoading || isOutOfStock}
+                        disabled={
+                          isAdding ||
+                          isLoading ||
+                          isOutOfStock ||
+                          !isAuthenticated
+                        }
                         className="flex-1"
                         size="lg"
                       >
-                        {isAdding || isLoading ? (
+                        {!isAuthenticated ? (
+                          <>
+                            <ShoppingCart className="mr-2 h-5 w-5" />
+                            Login to Buy
+                          </>
+                        ) : isAdding || isLoading ? (
                           <>
                             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             Adding...
@@ -248,7 +306,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
                         onClick={handleToggleWishlist}
                         className={cn(isWishlisted && 'text-red-500')}
                       >
-                        <Heart className={cn('h-5 w-5', isWishlisted && 'fill-current')} />
+                        <Heart
+                          className={cn(
+                            'h-5 w-5',
+                            isWishlisted && 'fill-current'
+                          )}
+                        />
                       </Button>
                     </div>
                   </div>
@@ -298,7 +361,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
         {/* Price Section */}
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            ${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}
+            $
+            {typeof product.price === 'string'
+              ? parseFloat(product.price).toFixed(2)
+              : product.price.toFixed(2)}
           </span>
           {originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
@@ -316,14 +382,24 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <CardFooter className="p-4 pt-0 flex gap-2">
         <Button
           onClick={handleAddToCart}
-          disabled={isAdding || isLoading || isOutOfStock}
+          disabled={
+            isAdding ||
+            isLoading ||
+            isOutOfStock ||
+            !isAuthenticated
+          }
           className={cn(
             'flex-1 transition-all duration-200',
             justAdded && 'bg-green-600 hover:bg-green-700'
           )}
           variant={justAdded ? 'default' : 'default'}
         >
-          {justAdded ? (
+          {!isAuthenticated ? (
+            <>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Login to Buy
+            </>
+          ) : justAdded ? (
             <>
               <Check className="mr-2 h-4 w-4" />
               Added!

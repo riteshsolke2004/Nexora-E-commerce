@@ -70,6 +70,16 @@ const HeroSection = () => {
       buttonLink: '/category/home-kitchen',
       textColor: 'text-white',
     },
+    {
+      id: 4,
+      title: 'Menswear Collection',
+      subtitle: 'Transform Your Look',
+      description: 'Stylish and comfortable clothing for men',
+      image: 'https://nexorafashion.com/banner/banner2.png',
+      buttonText: 'Discover More',
+      buttonLink: '/products',
+      textColor: 'text-white',
+    },
   ];
 
   // Auto-scroll configuration

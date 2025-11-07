@@ -4,7 +4,7 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const checkoutRoutes = require('./routes/checkoutRoutes');
 const errorHandler = require('./middleware/errorHandler');
-
+const authRoutes = require('./routes/authRoutes');
 const app = express();
 
 // ==================== CORS CONFIGURATION ====================
@@ -52,6 +52,7 @@ app.use((req, res, next) => {
 });
 
 // ==================== ROUTES ====================
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/checkout', checkoutRoutes);

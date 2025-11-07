@@ -457,7 +457,7 @@ const Checkout = () => {
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="USA">United States</option>
-                          <option value="CAN">Canada</option>
+                          <option value="CAN">India</option>
                           <option value="MEX">Mexico</option>
                           <option value="UK">United Kingdom</option>
                           <option value="AUS">Australia</option>

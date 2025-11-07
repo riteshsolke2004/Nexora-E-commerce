@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from '@/contexts/WishlistContext';
 
@@ -47,12 +48,15 @@ import Nutrition from './pages/Categories/Subcategories/SportsFitness/Nutrition'
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsConditions from './pages/TermsConditions';
 import CookiePolicy from './pages/CookiePolicy';
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AuthProvider>
       <WishlistProvider>
       <CartProvider>
         <Toaster />
@@ -69,6 +73,7 @@ const App = () => (
             <Route path="/products" element={<Productss />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+
             <Route path="/category/mobiles" element={<Mobiles />} />
             <Route path="/category/laptops" element={<Laptops />} />
             <Route path="/category/tablets" element={<Tablets />} />
@@ -104,14 +109,38 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsConditions />} />
             <Route path="/cookies" element={<CookiePolicy />} />
+            
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </CartProvider>
       </WishlistProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export default App;
+
+
