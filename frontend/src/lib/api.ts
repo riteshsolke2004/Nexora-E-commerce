@@ -22,6 +22,7 @@ export interface Product {
   imageUrl?: string;
   image?: string;
   category?: string;
+  subcategory?: string;        // ✅ ADD THIS
   stock?: number;
   brand?: string;
   rating?: number;
@@ -71,6 +72,32 @@ export interface CheckoutPayload {
   cartItems: CartItem[];
 }
 
+export interface OrderItem {
+  cartId?: string;
+  productId: string;
+  name: string;
+  price: number;
+  qty: number;
+  quantity?: number;
+}
+
+export interface Order {
+  receiptId: string;
+  orderId?: string;
+  id?: string;
+  name: string;
+  email: string;
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  timestamp: string;
+  status: 'completed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  date?: string;
+}
+
+// ==================== HELPER FUNCTIONS ====================
+
 // Helper function to normalize CartItem
 export const normalizeCartItem = (item: any): CartItem => {
   return {
@@ -81,8 +108,15 @@ export const normalizeCartItem = (item: any): CartItem => {
     price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
     imageUrl: item.imageUrl || item.image,
     image: item.image || item.imageUrl,
-    qty: typeof item.qty === 'string' ? parseInt(item.qty, 10) : item.qty,
-    quantity: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity || (typeof item.qty === 'string' ? parseInt(item.qty, 10) : item.qty),
+    qty:
+      typeof item.qty === 'string'
+        ? parseInt(item.qty, 10)
+        : item.qty || item.quantity,
+    quantity:
+      typeof item.quantity === 'string'
+        ? parseInt(item.quantity, 10)
+        : item.quantity ||
+          (typeof item.qty === 'string' ? parseInt(item.qty, 10) : item.qty),
     description: item.description,
   };
 };
@@ -99,7 +133,7 @@ async function apiRequest<T>(
 
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
-    'userId': userId, // Make sure this is being sent
+    userId: userId, // Make sure this is being sent
   };
 
   const config: RequestInit = {
@@ -129,7 +163,6 @@ async function apiRequest<T>(
   }
 }
 
-
 // ==================== PRODUCT API ====================
 
 export const fetchProducts = async (): Promise<Product[]> => {
@@ -145,10 +178,60 @@ export const fetchProducts = async (): Promise<Product[]> => {
 };
 
 export const fetchProductById = async (id: string): Promise<Product> => {
-  const response = await apiRequest<{ success: boolean; data: Product }>(
-    `/products/${id}`
-  );
-  return response.data;
+  try {
+    const response = await apiRequest<{ success: boolean; data: Product }>(
+      `/products/${id}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch product by ID:', error);
+    throw error;
+  }
+};
+
+// ✅ NEW: Fetch products by subcategory
+export const fetchProductsBySubcategory = async (
+  subcategory: string
+): Promise<Product[]> => {
+  try {
+    const response = await apiRequest<{ success: boolean; data: Product[] }>(
+      `/products?subcategory=${encodeURIComponent(subcategory)}`
+    );
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to fetch products by subcategory:', error);
+    throw error;
+  }
+};
+
+// ✅ NEW: Fetch products by category
+export const fetchProductsByCategory = async (
+  category: string
+): Promise<Product[]> => {
+  try {
+    const response = await apiRequest<{ success: boolean; data: Product[] }>(
+      `/products?category=${encodeURIComponent(category)}`
+    );
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to fetch products by category:', error);
+    throw error;
+  }
+};
+
+// ✅ NEW: Fetch products by brand
+export const fetchProductsByBrand = async (
+  brand: string
+): Promise<Product[]> => {
+  try {
+    const response = await apiRequest<{ success: boolean; data: Product[] }>(
+      `/products?brand=${encodeURIComponent(brand)}`
+    );
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to fetch products by brand:', error);
+    throw error;
+  }
 };
 
 // ==================== CART API ====================
@@ -174,7 +257,8 @@ export const addToCart = async (
   quantity: number = 1
 ): Promise<Cart> => {
   try {
-    const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+    const qty =
+      typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
     const response = await apiRequest<{ success: boolean; data: Cart }>(
       '/cart',
       {
@@ -215,7 +299,8 @@ export const updateCartQuantity = async (
   quantity: number
 ): Promise<Cart> => {
   try {
-    const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+    const qty =
+      typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
     const response = await apiRequest<{ success: boolean; data: Cart }>(
       `/cart/${cartId}`,
       {
@@ -252,12 +337,16 @@ export const checkoutAPI = async (
 ): Promise<Receipt> => {
   try {
     // Transform cartItems to match backend format
-    const cartItems = payload.cartItems.map(item => ({
+    const cartItems = payload.cartItems.map((item) => ({
       cartId: item.cartId || item.id,
       productId: item.productId,
       name: item.name,
-      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
-      qty: typeof item.quantity === 'string' ? parseInt(item.quantity, 10) : item.quantity,
+      price:
+        typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+      qty:
+        typeof item.quantity === 'string'
+          ? parseInt(item.quantity, 10)
+          : item.quantity,
     }));
 
     const response = await apiRequest<{ success: boolean; data: Receipt }>(
@@ -293,30 +382,6 @@ export const getReceipt = async (receiptId: string): Promise<Receipt> => {
 
 // ==================== ORDERS API ====================
 
-export interface OrderItem {
-  cartId?: string;
-  productId: string;
-  name: string;
-  price: number;
-  qty: number;
-  quantity?: number;
-}
-
-export interface Order {
-  receiptId: string;
-  orderId?: string;
-  id?: string;
-  name: string;
-  email: string;
-  items: OrderItem[];
-  subtotal: number;
-  tax: number;
-  total: number;
-  timestamp: string;
-  status: 'completed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  date?: string;
-}
-
 export const getOrdersByEmail = async (email: string): Promise<Order[]> => {
   try {
     const response = await apiRequest<{ success: boolean; data: Order[] }>(
@@ -337,6 +402,63 @@ export const getOrderById = async (orderId: string): Promise<Order> => {
     return response.data;
   } catch (error) {
     console.error('Failed to fetch order:', error);
+    throw error;
+  }
+};
+
+// ==================== AUTHENTICATION API ====================
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+export interface SignupPayload {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+}
+
+export const login = async (
+  email: string,
+  password: string
+): Promise<AuthResponse> => {
+  try {
+    const response = await apiRequest<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    return response;
+  } catch (error) {
+    console.error('Login failed:', error);
+    throw error;
+  }
+};
+
+export const signup = async (
+  name: string,
+  email: string,
+  password: string
+): Promise<AuthResponse> => {
+  try {
+    const response = await apiRequest<AuthResponse>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    });
+    return response;
+  } catch (error) {
+    console.error('Signup failed:', error);
     throw error;
   }
 };

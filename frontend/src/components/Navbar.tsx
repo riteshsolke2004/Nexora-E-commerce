@@ -33,28 +33,28 @@ const Navbar = () => {
   const [isSearching, setIsSearching] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const categories = [
-    {
-      name: 'Electronics',
-      subcategories: ['Mobiles', 'Laptops', 'Tablets', 'Cameras', 'Audio', 'Wearables'],
-    },
-    {
-      name: 'Fashion',
-      subcategories: ['Men\'s Clothing', 'Women\'s Clothing', 'Kids', 'Footwear', 'Accessories', 'Jewelry'],
-    },
-    {
-      name: 'Home & Kitchen',
-      subcategories: ['Furniture', 'Home Decor', 'Kitchen Appliances', 'Bedding', 'Cookware'],
-    },
-    {
-      name: 'Beauty & Personal Care',
-      subcategories: ['Skincare', 'Makeup', 'Hair Care', 'Fragrances', 'Men\'s Grooming'],
-    },
-    {
-      name: 'Sports & Fitness',
-      subcategories: ['Exercise Equipment', 'Sports Gear', 'Outdoor', 'Yoga', 'Nutrition'],
-    },
-  ];
+  // const categories = [
+  //   {
+  //     name: 'Electronics',
+  //     subcategories: ['Mobiles', 'Laptops', 'Tablets', 'Cameras', 'Audio', 'Wearables'],
+  //   },
+  //   {
+  //     name: 'Fashion',
+  //     subcategories: ['Men\'s Clothing', 'Women\'s Clothing', 'Kids', 'Footwear', 'Accessories', 'Jewelry'],
+  //   },
+  //   {
+  //     name: 'Home & Kitchen',
+  //     subcategories: ['Furniture', 'Home Decor', 'Kitchen Appliances', 'Bedding', 'Cookware'],
+  //   },
+  //   {
+  //     name: 'Beauty & Personal Care',
+  //     subcategories: ['Skincare', 'Makeup', 'Hair Care', 'Fragrances', 'Men\'s Grooming'],
+  //   },
+  //   {
+  //     name: 'Sports & Fitness',
+  //     subcategories: ['Exercise Equipment', 'Sports Gear', 'Outdoor', 'Yoga', 'Nutrition'],
+  //   },
+  // ];
 
   // Click outside to close search results
   useEffect(() => {
@@ -384,32 +384,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Categories Bar */}
-          <div className="hidden lg:flex items-center gap-1 border-t py-2 overflow-x-auto">
-            {categories.map((category) => (
-              <DropdownMenu key={category.name}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="text-sm font-medium hover:text-blue-600 hover:bg-blue-50 whitespace-nowrap">
-                    {category.name}
-                    <ChevronDown className="ml-1 h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48">
-                  {category.subcategories.map((sub) => (
-                    <DropdownMenuItem key={sub} asChild>
-                      <Link
-                        to={`/category/${sub
-                          .toLowerCase()
-                          .replace(/\s+/g, '-')}`}
-                      >
-                        {sub}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ))}
-          </div>
+         
         </div>
       </nav>
 
@@ -498,32 +473,7 @@ const Navbar = () => {
 
                 <Separator className="my-2" />
 
-                {/* Categories */}
-                <div className="space-y-2 mb-4">
-                  <div className="font-semibold text-sm text-gray-500">Categories</div>
-                  {categories.map((category) => (
-                    <details key={category.name} className="group">
-                      <summary className="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50 rounded font-medium text-sm">
-                        {category.name}
-                        <ChevronDown className="h-4 w-4 group-open:rotate-180 transition-transform" />
-                      </summary>
-                      <div className="pl-4 mt-2 space-y-1">
-                        {category.subcategories.map((sub) => (
-                          <Link
-                            key={sub}
-                            to={`/category/${sub
-                              .toLowerCase()
-                              .replace(/\s+/g, '-')}`}
-                            className="block p-2 text-sm hover:bg-gray-50 rounded"
-                            onClick={() => setShowMobileMenu(false)}
-                          >
-                            {sub}
-                          </Link>
-                        ))}
-                      </div>
-                    </details>
-                  ))}
-                </div>
+                
 
                 <Separator className="my-2" />
 
@@ -540,31 +490,7 @@ const Navbar = () => {
             ) : (
               <>
                 {/* Mobile Menu Links - Not Logged In */}
-                <div className="space-y-2 mb-6">
-                  <div className="font-semibold text-sm text-gray-500 mb-2">Categories</div>
-                  {categories.map((category) => (
-                    <details key={category.name} className="group">
-                      <summary className="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50 rounded font-medium text-sm">
-                        {category.name}
-                        <ChevronDown className="h-4 w-4 group-open:rotate-180 transition-transform" />
-                      </summary>
-                      <div className="pl-4 mt-2 space-y-1">
-                        {category.subcategories.map((sub) => (
-                          <Link
-                            key={sub}
-                            to={`/category/${sub
-                              .toLowerCase()
-                              .replace(/\s+/g, '-')}`}
-                            className="block p-2 text-sm hover:bg-gray-50 rounded"
-                            onClick={() => setShowMobileMenu(false)}
-                          >
-                            {sub}
-                          </Link>
-                        ))}
-                      </div>
-                    </details>
-                  ))}
-                </div>
+               
 
                 <Separator className="my-4" />
 
