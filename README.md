@@ -13,9 +13,6 @@ A modern, full-stack e-commerce application with responsive design, real-time pr
 ### Homepage with Hero Section
 ![Hero Section](./screenshots/hero-section.png)
 
-### Product Categories
-![Categories](./screenshots/categories.png)
-
 ### Super Dhamaka Offers Section
 ![Deals](./screenshots/super-dhamaka.png)
 
